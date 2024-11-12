@@ -1,0 +1,29 @@
+name: "Release asset signer"
+description: "Download and sign release assets, uploading the result back to the release"
+inputs:
+  github_token:
+    description: "GitHub token"
+    required: true
+  owner:
+    description: "Repository owner"
+    required: true
+  repository:
+    description: "Repository name"
+    required: true
+  release_tag:
+    description: "Release tag"
+    required: true
+  key_id:
+    description: "GPG key ID"
+    required: true
+  key_passphrase:
+    description: "GPG key passphrase"
+    required: true
+
+outputs:
+  signed_assets:
+    description: "The assets that were signed"
+
+runs:
+  using: node16
+  main: index.js
