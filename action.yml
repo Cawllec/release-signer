@@ -4,8 +4,8 @@ inputs:
   github_token:
     description: "GitHub token"
     required: true
-  owner:
-    description: "Repository owner"
+  organization:
+    description: "Organization name"
     required: true
   repository:
     description: "Repository name"

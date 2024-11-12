@@ -4,7 +4,7 @@ const core = require('@actions/core')
 
 // Given a repo, release, API key, and gpg key
 const github_token = core.getInput('github_token')
-const owner = core.getInput('owner')
+const organization = core.getInput('organization')
 const repository = core.getInput('repository')
 const release_tag = core.getInput('release_tag')
 const key_id = core.getInput('key_id')
@@ -21,7 +21,7 @@ async function main() {
         core.setFailed('GPG key not found')
     }
 
-    let full_repo = `${owner}/${repository}`
+    let full_repo = `${organization}/${repository}`
 
     // Get release id
     let release = await get_release(full_repo)
