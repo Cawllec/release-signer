@@ -4,7 +4,7 @@ const core = require('@actions/core')
 
 // Given a repo, release, API key, and gpg key
 const github_token = core.getInput('github_token')
-const full_repository = core.getInput('repository')
+const full_repository = core.getInput('full_repository')
 const release_tag = core.getInput('release_tag')
 const key_id = core.getInput('key_id')
 const key_passphrase = core.getInput('key_passphrase')
@@ -23,7 +23,7 @@ async function main() {
     let [organization, repository] = full_repository.split('/')
 
     // Get release id
-    let release = await get_release(full_repository)
+    let release = await get_release()
     console.log(`Got release: ${release}`)
     let release_id = release.id
 
@@ -79,7 +79,7 @@ function run_command(command) {
     }
 }
 
-async function get_release(repo) {
+async function get_release() {
     const url = `https://api.github.com/repos/${full_repository}/releases/tags/${release_tag}`
     console.log(`Fetching release from ${url}`)
     return await fetch(url, {
@@ -156,7 +156,7 @@ async function download_asset(name, download_url) {
 }
 
 async function upload_asset(name, release_id) {
-    const url = `https://uploads.github.com/repos/${full_epository}/releases/${release_id}/assets?name=${name}`;
+    const url = `https://uploads.github.com/repos/${full_repository}/releases/${release_id}/assets?name=${name}`;
     return await fetch(url, {
         method: 'POST',
         headers: {
