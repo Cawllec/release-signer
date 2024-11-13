@@ -4,11 +4,8 @@ inputs:
   github_token:
     description: "GitHub token"
     required: true
-  organization:
-    description: "Organization name"
-    required: true
-  repository:
-    description: "Repository name"
+  full_repository:
+    description: "Repository name as 'owner/repo'"
     required: true
   release_tag:
     description: "Release tag"
