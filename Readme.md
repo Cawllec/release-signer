@@ -31,8 +31,8 @@ jobs:
               uses: #This action
               with:
                 github_token: ${{ secrets.GITHUB_TOKEN }}
-                organization: ${{ github.event.organization }}
-                repository: ${{ github.event.repository }}
+                organization: ${{ github.repository_owner }}
+                repository: ${{ github.repository }}
                 release_tag: ${{ github.event.release.tag_name }}
                 key_id: ${{ secrets.SIGNING_KEY_ID }}
                 key_passphrase: ${{ secrets.SIGNING_KEY_PASSPHRASE }}
