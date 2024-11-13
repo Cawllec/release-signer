@@ -25,6 +25,7 @@ async function main() {
 
     // Get release id
     let release = await get_release(full_repo)
+    console.log(`Got release: ${release}`)
     let release_id = release.id
 
     // Get assets from github
@@ -81,6 +82,7 @@ function run_command(command) {
 
 async function get_release(repo) {
     const url = `https://api.github.com/repos/${repo}/releases/tags/${release_tag}`
+    console.log(`Fetching release from ${url}`)
     return await fetch(url, {
         headers: {
             "Accept": "application/vnd.github+json",
@@ -92,6 +94,7 @@ async function get_release(repo) {
             if (response.status !== 200) {
                 throw new Error(`Failed to fetch release: ${response.status} : ${response.message}`)
             }
+            console.log("Release fetched")
             return response.json()
         })
         .catch(error => {
