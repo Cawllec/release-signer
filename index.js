@@ -13,11 +13,11 @@ async function main() {
     // GPG installed, key present
     let gpg_version = run_command('gpg --version')
     if (gpg_version.includes('not found')) {
-        core.setFailed('GPG not found')
+        fail_and_exit('GPG not found')
     }
     let key_present = run_command(`gpg --list-keys ${key_id}`)
     if  (key_present.includes('not found')) {
-        core.setFailed('GPG key not found')
+        fail_and_exit('GPG key not found')
     }
 
     let [organization, repository] = full_repository.split('/')
@@ -58,8 +58,8 @@ async function main() {
     // Some assertion here to check all the downloads were successful
 
     release_assets.forEach(asset => {
-        run_command(`gpg --armor --output ${asset.name}.asc --local-user ${key_id} --passphrase ${key_passphrase} --detach-sig ${asset.name}`)
-        run_command(`gpg --verify ${asset.name}.asc ${asset.name}`)
+        run_command(`gpg --batch --armor --output ${asset.name}.asc --local-user ${key_id} --passphrase ${key_passphrase} --detach-sig ${asset.name}`)
+        run_command(`gpg --batch --verify ${asset.name}.asc ${asset.name}`)
     })
 
     // Upload the signed assets
@@ -75,7 +75,7 @@ function run_command(command) {
     try {
         return execSync(command, { timeout: 10000})
     } catch (error) {
-        core.setFailed(error.message)
+        fail_and_exit(error.message)
     }
 }
 
@@ -97,7 +97,7 @@ async function get_release() {
             return response.json()
         })
         .catch(error => {
-            core.setFailed(error.message)
+            fail_and_exit(error.message)
         })
 }
 
@@ -125,7 +125,7 @@ async function get_asset_list(release_id) {
             })
         })
         .catch(error => {
-            core.setFailed(error.message)
+            fail_and_exit(error.message)
         })
 }
 
@@ -151,7 +151,7 @@ async function download_asset(name, download_url) {
             });
         })
         .catch(error => {
-            core.setFailed(error.message)
+            fail_and_exit(error.message)
         })
 }
 
@@ -174,8 +174,13 @@ async function upload_asset(name, release_id) {
             return response.message
         })
         .catch(error => {
-            core.setFailed(error.message)
+            fail_and_exit(error.message)
         })
+}
+
+function fail_and_exit(message) {
+    core.setFailed(message)
+    process.exit(1)
 }
 
 main()
