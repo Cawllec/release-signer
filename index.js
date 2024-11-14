@@ -58,7 +58,7 @@ async function main() {
     // Some assertion here to check all the downloads were successful
 
     release_assets.forEach(asset => {
-        run_command(`gpg --batch --armor --output ${asset.name}.asc --local-user ${key_id} --passphrase ${key_passphrase} --detach-sig ${asset.name}`)
+        run_command(`gpg --batch --pinentry-mode loopback --armor --output ${asset.name}.asc --local-user ${key_id} --passphrase ${key_passphrase} --detach-sig ${asset.name}`)
         run_command(`gpg --batch --verify ${asset.name}.asc ${asset.name}`)
     })
 
