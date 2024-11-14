@@ -4,8 +4,7 @@ const core = require('@actions/core')
 
 // Given a repo, release, API key, and gpg key
 const github_token = core.getInput('github_token')
-const organization = core.getInput('organization')
-const repository = core.getInput('repository')
+const full_repository = core.getInput('full_repository')
 const release_tag = core.getInput('release_tag')
 const key_id = core.getInput('key_id')
 const key_passphrase = core.getInput('key_passphrase')
@@ -14,17 +13,18 @@ async function main() {
     // GPG installed, key present
     let gpg_version = run_command('gpg --version')
     if (gpg_version.includes('not found')) {
-        core.setFailed('GPG not found')
+        fail_and_exit('GPG not found')
     }
     let key_present = run_command(`gpg --list-keys ${key_id}`)
     if  (key_present.includes('not found')) {
-        core.setFailed('GPG key not found')
+        fail_and_exit('GPG key not found')
     }
 
-    let full_repo = `${organization}/${repository}`
+    let [organization, repository] = full_repository.split('/')
 
     // Get release id
-    let release = await get_release(full_repo)
+    let release = await get_release()
+    console.log(`Got release: ${release}`)
     let release_id = release.id
 
     // Get assets from github
@@ -42,11 +42,11 @@ async function main() {
     let semver_version = version_regex[0]
     release_assets.push({
         name: `${repository}-${semver_version}.tar.gz`,
-        download_url: `https://github.com/${repository}/archive/refs/tags/${release_tag}.tar.gz`
+        download_url: `https://github.com/${full_repository}/archive/refs/tags/${release_tag}.tar.gz`
     })
     release_assets.push({
         name: `${repository}-${semver_version}.zip`,
-        download_url: `https://github.com/${repository}/archive/refs/tags/${release_tag}.zip`
+        download_url: `https://github.com/${full_repository}/archive/refs/tags/${release_tag}.zip`
     })
 
     // Download the assets
@@ -58,13 +58,13 @@ async function main() {
     // Some assertion here to check all the downloads were successful
 
     release_assets.forEach(asset => {
-        run_command(`gpg --armor --output ${asset.name}.asc --local-user ${key_id} --passphrase ${key_passphrase} --detach-sig ${asset.name}`)
-        run_command(`gpg --verify ${asset.name}.asc ${asset.name}`)
+        run_command(`gpg --batch --pinentry-mode loopback --armor --output ${asset.name}.asc --local-user ${key_id} --passphrase ${key_passphrase} --detach-sig ${asset.name}`)
+        run_command(`gpg --batch --verify ${asset.name}.asc ${asset.name}`)
     })
 
     // Upload the signed assets
     let upload_promises = release_assets.map(asset => {
-        return upload_asset(full_repo, `${asset.name}.asc`, release_id)
+        return upload_asset(`${asset.name}.asc`, release_id)
     })
     let completed_uploads = await Promise.all(upload_promises)
     // Some way to confirm the uploads worked
@@ -75,12 +75,13 @@ function run_command(command) {
     try {
         return execSync(command, { timeout: 10000})
     } catch (error) {
-        core.setFailed(error.message)
+        fail_and_exit(error.message)
     }
 }
 
-async function get_release(repo) {
-    const url = `https://api.github.com/repos/${repo}/releases/tags/${release_tag}`
+async function get_release() {
+    const url = `https://api.github.com/repos/${full_repository}/releases/tags/${release_tag}`
+    console.log(`Fetching release from ${url}`)
     return await fetch(url, {
         headers: {
             "Accept": "application/vnd.github+json",
@@ -92,15 +93,16 @@ async function get_release(repo) {
             if (response.status !== 200) {
                 throw new Error(`Failed to fetch release: ${response.status} : ${response.message}`)
             }
+            console.log("Release fetched")
             return response.json()
         })
         .catch(error => {
-            core.setFailed(error.message)
+            fail_and_exit(error.message)
         })
 }
 
 async function get_asset_list(release_id) {
-    const url = `https://api.github.com/repos/${repository}/releases/${release_id}/assets`
+    const url = `https://api.github.com/repos/${full_repository}/releases/${release_id}/assets`
     return await fetch(url, {
         headers: {
             "Accept": "application/vnd.github+json",
@@ -123,7 +125,7 @@ async function get_asset_list(release_id) {
             })
         })
         .catch(error => {
-            core.setFailed(error.message)
+            fail_and_exit(error.message)
         })
 }
 
@@ -149,12 +151,12 @@ async function download_asset(name, download_url) {
             });
         })
         .catch(error => {
-            core.setFailed(error.message)
+            fail_and_exit(error.message)
         })
 }
 
-async function upload_asset(repository, name, release_id) {
-    const url = `https://uploads.github.com/repos/${repository}/releases/${release_id}/assets?name=${name}`;
+async function upload_asset(name, release_id) {
+    const url = `https://uploads.github.com/repos/${full_repository}/releases/${release_id}/assets?name=${name}`;
     return await fetch(url, {
         method: 'POST',
         headers: {
@@ -172,8 +174,13 @@ async function upload_asset(repository, name, release_id) {
             return response.message
         })
         .catch(error => {
-            core.setFailed(error.message)
+            fail_and_exit(error.message)
         })
+}
+
+function fail_and_exit(message) {
+    core.setFailed(message)
+    process.exit(1)
 }
 
 main()
